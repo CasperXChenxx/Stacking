@@ -18,7 +18,28 @@ run_script <- function(script, env = character()) {
   if (length(env)) cat(sprintf(" [%s]", paste(env, collapse = ", ")))
   cat("\n")
 
-  status <- system2(rscript, args = shQuote(script), env = env)
+  # R 4.1 on Windows may pass system2(env = ...) entries to Rscript as
+  # positional arguments. Set them in the parent process instead; child
+  # processes inherit the environment on every supported platform.
+  if (length(env)) {
+    env_names <- sub("=.*$", "", env)
+    env_values <- sub("^[^=]*=", "", env)
+    old_values <- Sys.getenv(env_names, unset = NA_character_)
+
+    do.call(Sys.setenv, as.list(setNames(env_values, env_names)))
+    on.exit({
+      existed <- !is.na(old_values)
+      if (any(existed)) {
+        do.call(
+          Sys.setenv,
+          as.list(setNames(old_values[existed], env_names[existed]))
+        )
+      }
+      if (any(!existed)) Sys.unsetenv(env_names[!existed])
+    }, add = TRUE)
+  }
+
+  status <- system2(rscript, args = shQuote(script))
   if (!identical(status, 0L)) {
     stop(sprintf("%s failed with exit status %s.", script, status))
   }

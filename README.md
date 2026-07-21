@@ -140,6 +140,14 @@ Relative Improvement (%) = 100 * (AIC - Stacking) / AIC.
 
 The final files are `results/paper-tables/table-1.csv` through `table-6.csv`.
 
+To compare all generated values with Tables 1-6 in the current manuscript, run:
+
+```sh
+Rscript scripts/verify_paper_tables.R
+```
+
+This verification script only checks the generated tables against the manuscript values; it does not run experiments or provide precomputed results.
+
 ## Reproducibility notes
 
 - The simulation seed is `123`.
