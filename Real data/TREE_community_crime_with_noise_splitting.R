@@ -15,18 +15,27 @@ library(rmutil)
 library(stats)
 library(rpart)   # nested trees
 
-setwd("C:/Users/xchen/Desktop/Study/Research/Jason Klusowski/Tree")
+env_nonnegative_int <- function(name, default) {
+  value <- Sys.getenv(name, unset = "")
+  if (!nzchar(value)) return(as.integer(default))
+
+  parsed <- suppressWarnings(as.integer(value))
+  if (is.na(parsed) || parsed < 0L) {
+    stop(sprintf("Environment variable %s must be a nonnegative integer.", name))
+  }
+  parsed
+}
 
 # ============================================================
 # USER OPTIONS
 # ============================================================
 
 ## A) Data file (UCI Communities & Crime)
-data_file <- "communities.data"
+data_file <- file.path("data", "communities.data")
 
 ## B) Add independent irrelevant (noise) features?
-add_noise_features <- TRUE     # TRUE/FALSE
-m_noise <- 60                  # how many noise features to add (ignored if add_noise_features=FALSE)
+m_noise <- env_nonnegative_int("M_NOISE", 0)
+add_noise_features <- m_noise > 0L
 sd_min <- 1                    # noise sd range
 sd_max <- 10
 noise_seed <- 111              # seed used only for noise generation
@@ -351,15 +360,14 @@ print(mse_results_tree, row.names = FALSE)
 # Save results
 # ============================================================
 
-results_dir <- "results_communities_crime"
-if (!dir.exists(results_dir)) dir.create(results_dir)
+results_dir <- file.path("results", "table-6-communities-crime")
+dir.create(results_dir, showWarnings = FALSE, recursive = TRUE)
 
 tag_split <- if (use_internal_split) sprintf("split_sel%.2f", sel_prop) else "nosplit"
 tag_noise <- if (add_noise_features) sprintf("noise_m%d", m_noise) else "noise_m0"
 
-file_name <- file.path(results_dir, paste0("communities_crime_treeonly_result_", tag_noise, "_", tag_split, ".txt"))
+file_name <- file.path(results_dir, paste0("communities_crime_tree_", tag_noise, "_", tag_split, ".csv"))
 
-write.table(mse_results_tree, file = file_name,
-            row.names = FALSE, col.names = TRUE, quote = FALSE)
+write.csv(mse_results_tree, file = file_name, row.names = FALSE)
 
 cat(sprintf("\nSaved results to: %s\n", file_name))

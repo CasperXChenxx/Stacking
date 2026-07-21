@@ -8,7 +8,16 @@ library(ggplot2)
 library(tidyr)
 library(dplyr)
 
-setwd("C:/Users/xchen/Desktop/Study/Research/Jason Klusowski/Tree")
+env_positive_int <- function(name, default) {
+  value <- Sys.getenv(name, unset = "")
+  if (!nzchar(value)) return(as.integer(default))
+
+  parsed <- suppressWarnings(as.integer(value))
+  if (is.na(parsed) || parsed < 1L) {
+    stop(sprintf("Environment variable %s must be a positive integer.", name))
+  }
+  parsed
+}
 
 # ----------------------------
 # Simulation setup
@@ -42,14 +51,14 @@ gamma <- min(1 / tau, 1 / lambda)
 eta <- 1/2  # (kept but not used below)
 
 # Simulation parameters
-s <- 3     # noise sd
-B <- 1000  # iterations
+s <- 3                          # noise sd
+B <- env_positive_int("N_REPS", 1000)  # Monte Carlo replications
 
 # Nested model sizes 1..p
 df <- seq_len(p)
 
 # True model uses first num_coef coordinates (must be <= p now)
-num_coef <- 20
+num_coef <- env_positive_int("NUM_COEF", 20)
 stopifnot(num_coef <= p)
 
 # ----------------------------
@@ -172,7 +181,14 @@ results_full <- results
 # ----------------------------
 # Plotting (only 4 methods)
 # ----------------------------
-pdf("plot_backward_full_data_p50_reps1000_num20.pdf", width = 7, height = 7)
+results_dir <- file.path("results", "table-1-2-backward")
+dir.create(results_dir, showWarnings = FALSE, recursive = TRUE)
+
+plot_file <- file.path(
+  results_dir,
+  sprintf("backward_p%d_reps%d_num%d.pdf", p, B, num_coef)
+)
+pdf(plot_file, width = 7, height = 7)
 
 results_long <- results %>%
   pivot_longer(cols = -f_norms,
@@ -218,11 +234,11 @@ dev.off()
 # ----------------------------
 # Save CSV to folder
 # ----------------------------
-folder <- "simulation save"
-dir.create(folder, showWarnings = FALSE, recursive = TRUE)
-
-outfile_csv <- file.path(folder, "plot_backward_full_data_p50_reps1000_num20.csv")
+outfile_csv <- file.path(
+  results_dir,
+  sprintf("backward_p%d_reps%d_num%d.csv", p, B, num_coef)
+)
 write.csv(results_full, outfile_csv, row.names = FALSE)
 
 cat(sprintf("\nSaved CSV to: %s\n", outfile_csv))
-cat("Saved plot to: plot_backward_full_data_p50_reps1000.pdf\n")
+cat(sprintf("Saved plot to: %s\n", plot_file))

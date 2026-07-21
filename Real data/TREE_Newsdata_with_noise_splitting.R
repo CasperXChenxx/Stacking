@@ -4,15 +4,24 @@ library(rmutil)
 library(stats)
 library(rpart)   # nested trees (Breiman pruning path)
 
-setwd("C:/Users/xchen/Desktop/Study/Research/Jason Klusowski/Tree")
+env_nonnegative_int <- function(name, default) {
+  value <- Sys.getenv(name, unset = "")
+  if (!nzchar(value)) return(as.integer(default))
+
+  parsed <- suppressWarnings(as.integer(value))
+  if (is.na(parsed) || parsed < 0L) {
+    stop(sprintf("Environment variable %s must be a nonnegative integer.", name))
+  }
+  parsed
+}
 
 # ============================================================
 # USER OPTIONS
 # ============================================================
 
 ## A) Add independent irrelevant (noise) features?
-add_noise_features <- FALSE     # TRUE/FALSE
-m_noise <- 180                 # how many noise features to add (ignored if add_noise_features=FALSE)
+m_noise <- env_nonnegative_int("M_NOISE", 0)
+add_noise_features <- m_noise > 0L
 sd_min <- 1                    # noise sd range
 sd_max <- 10
 noise_seed <- 111              # seed used only for noise generation
@@ -30,7 +39,7 @@ ntest <- 500
 # 0) Read and preprocess data
 # ============================================================
 
-raw_data <- read.csv("News.csv", stringsAsFactors = FALSE)
+raw_data <- read.csv(file.path("data", "News.csv"), stringsAsFactors = FALSE)
 raw_data <- raw_data[, !colnames(raw_data) %in% c("weekday_is_sunday", "is_weekend", "LDA_04")]
 raw_data <- raw_data[, -c(1, 2)]
 
@@ -281,15 +290,14 @@ print(mse_results_tree, row.names = FALSE)
 # Save results
 # ============================================================
 
-results_dir <- "results_with_noise_and_split"
-if (!dir.exists(results_dir)) dir.create(results_dir)
+results_dir <- file.path("results", "table-3-online-news")
+dir.create(results_dir, showWarnings = FALSE, recursive = TRUE)
 
 tag_split <- if (use_internal_split) sprintf("split_sel%.2f", sel_prop) else "nosplit"
 tag_noise <- if (add_noise_features) sprintf("noise_m%d", m_noise) else "noise_m0"
 
-file_name <- file.path(results_dir, paste0("Newsdata_treeonly_result_", tag_noise, "_", tag_split, ".txt"))
+file_name <- file.path(results_dir, paste0("online_news_tree_", tag_noise, "_", tag_split, ".csv"))
 
-write.table(mse_results_tree, file = file_name,
-            row.names = FALSE, col.names = TRUE, quote = FALSE)
+write.csv(mse_results_tree, file = file_name, row.names = FALSE)
 
 cat(sprintf("\nSaved results to: %s\n", file_name))

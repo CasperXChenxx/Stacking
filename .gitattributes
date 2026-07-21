@@ -1,0 +1,3 @@
+*.R whitespace=cr-at-eol
+*.csv whitespace=cr-at-eol
+*.data whitespace=cr-at-eol
