@@ -144,6 +144,6 @@ The final files are `results/paper-tables/table-1.csv` through `table-6.csv`.
 
 - The simulation seed is `123`.
 - The real-data test-split seed and noise-feature seed are both `111`.
-- The optional internal selection/stacking split is disabled, matching the paper experiments.
+- The full training set is used both to construct the candidate models and to estimate the stacking weights.
 - Regression trees use `rpart` with `cp = 0`, `xval = 0`, `minsplit = 20`, and `maxdepth = 30`. The retained pruning-path models have numbers of internal nodes that are multiples of 10.
 - Raw per-run MSE values are saved before the paper's `x 10^3` display scaling.
